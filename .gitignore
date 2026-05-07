@@ -1,0 +1,19 @@
+# git-ignore stuff
+.vs/
+libs/
+
+# CMake / Build folders
+build/
+out/
+bin/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.cmake
+
+# Compiled binaries
+*.exe
+*.dll
+*.lib
+*.so
+*.a
