@@ -1,7 +1,9 @@
-﻿// Snowboard.cpp : Defines the entry point for the application.
-#include <iostream>
+﻿#include <iostream>
+#include "renderer.h"
+#include "audioSystem.h"
 
 int main() {
-	std::cout << "Hello CMake." << std::endl;
+
+	std::cout << "Yo." << std::endl;
 	return 0;
 }

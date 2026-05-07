@@ -21,7 +21,13 @@ find_package(SDL3_mixer REQUIRED CONFIG)
 
 find_package(SDL3_ttf   REQUIRED CONFIG) 
 
-add_executable(Snowboard "src/Main.cpp")
+add_executable(Snowboard 
+    "src/Main.cpp" 
+    "src/audioSystem.cpp" 
+    "src/audioSystem.h" 
+    "src/renderer.cpp" 
+    "src/renderer.h"
+)
 
 set_property(TARGET Snowboard PROPERTY CXX_STANDARD 20)
 
@@ -48,6 +54,6 @@ if(WIN32)
             $<TARGET_RUNTIME_DLLS:Snowboard>
             $<TARGET_FILE_DIR:Snowboard>
         COMMAND_EXPAND_LISTS
-        COMMENT "Copying SDL3 DLLs -> build dir"
+        COMMENT "Copying SDL3 DLLs"
     )
 endif()
