@@ -29,9 +29,14 @@ add_executable(Snowboard
     "src/renderer.h"
     "src/audioManager.h"
     "src/audioManager.cpp"
+    "libs/miniaudio.h"
 )
 
 set_property(TARGET Snowboard PROPERTY CXX_STANDARD 20)
+
+target_include_directories(Snowboard PRIVATE 
+    "${CMAKE_SOURCE_DIR}/libs/"
+)
 
 target_link_libraries(Snowboard PRIVATE
     SDL3::SDL3

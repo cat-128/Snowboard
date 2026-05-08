@@ -1,102 +1,125 @@
+#include "stb_vorbis.c"
+
+#undef L
+#undef R
+#undef C
+
+#define MINIAUDIO_IMPLEMENTATION
 #include "audioSystem.h"
 #include <iostream>
+#include <vector>
 
 bool AudioSystem::init() {
-    if (!SDL_Init(SDL_INIT_AUDIO)) {
-        std::cout << "AudioSystem failed to initialize" << SDL_GetError() << "\n";
+    
+    if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
+        std::cout << "Failed to initialize miniaudio\n";
         return false;
     }
+    isContextInit = true;
 
-    if (!SDL_LoadWAV("resources/audio/bang.wav", &wavSpec, &wavBuffer, &wavLength)) {
-        std::cout << "Couldn't load audio file: " << SDL_GetError() << "\n";
-        return false;
-    }
+    // Find the VB-Cable
+    ma_device_info* pPlaybackInfos;
+    ma_uint32 playbackCount;
+    ma_context_get_devices(&context, &pPlaybackInfos, &playbackCount, NULL, NULL);
 
-    // Find the VB-Cable Output
-    int deviceCount = 0;
-    SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&deviceCount);
-    SDL_AudioDeviceID vbCableID = 0;
+    ma_device_id vbCableID;
+    bool foundCable = false;
 
-    for (int i = 0; i < deviceCount; i++) {
-        std::string deviceName = SDL_GetAudioDeviceName(devices[i]);
-        if (deviceName.find("CABLE Input") != std::string::npos) {
-            vbCableID = devices[i];
-            break;
+    for (ma_uint32 i = 0; i < playbackCount; i++) {
+        std::string deviceName = pPlaybackInfos[i].name;
+        std::cout << "[" << i << "] " << deviceName << "\n";
+
+        for (ma_uint32 i = 0; i < playbackCount; i++) {
+            std::string deviceName = pPlaybackInfos[i].name;
+
+            //
+            if (!foundCable && (
+                deviceName.find("CABLE Input") != std::string::npos ||
+                deviceName.find("VB-Audio") != std::string::npos ||
+                deviceName.find("Voicemeeter Input") != std::string::npos))
+            {
+                vbCableID = pPlaybackInfos[i].id;
+                foundCable = true;
+            }
         }
     }
-    SDL_free(devices);
 
-    // goofy ass channels
-    sfxSpeakerStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &wavSpec, nullptr, nullptr);
+    ma_engine_config speakerConfig = ma_engine_config_init();
+    speakerConfig.pContext = &context;
+    if (ma_engine_init(&speakerConfig, &speakerEngine) == MA_SUCCESS) {
+        isSpeakerInit = true;
+        std::cout << "Speaker engine started.\n";
+    }
 
-    // Mic input
-    micCaptureStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &wavSpec, nullptr, nullptr);
-    if (vbCableID != 0) {
-        sfxCableStream = SDL_OpenAudioDeviceStream(vbCableID, &wavSpec, nullptr, nullptr);
-        micPlaybackStream = SDL_OpenAudioDeviceStream(vbCableID, &wavSpec, nullptr, nullptr);
+    if (foundCable) {
+        ma_engine_config cableConfig = ma_engine_config_init();
+        cableConfig.pContext = &context;
+        cableConfig.pPlaybackDeviceID = &vbCableID;
+        if (ma_engine_init(&cableConfig, &cableEngine) == MA_SUCCESS) {
+            isCableInit = true;
+            std::cout << "VB-Cable engine started.\n";
+        }
+
+        ma_device_config duplexConfig = ma_device_config_init(ma_device_type_duplex);
+        duplexConfig.capture.pDeviceID = NULL;
+        duplexConfig.playback.pDeviceID = &vbCableID;
+        duplexConfig.capture.format = ma_format_f32;
+        duplexConfig.playback.format = ma_format_f32;
+        duplexConfig.capture.channels = 2;
+        duplexConfig.playback.channels = 2;
+        duplexConfig.sampleRate = 48000;
+        duplexConfig.dataCallback = duplexCallback;
+
+        if (ma_device_init(&context, &duplexConfig, &micRouterDevice) == MA_SUCCESS) {
+            isMicRouterInit = true;
+            ma_device_start(&micRouterDevice);
+            std::cout << "Mic-to-Cable is working, big W's\n";
+        }
+        else {
+            std::cout << "ERROR: Failed to start the goff\n";
+        }
     }
     else {
-        std::cout << "VB-Cable ID not found\n";
-    }
-
-    // Turn all the devices on
-    if (sfxSpeakerStream) SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(sfxSpeakerStream));
-    if (sfxCableStream) SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(sfxCableStream));
-    if (micCaptureStream) SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(micCaptureStream));
-    if (micPlaybackStream) SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(micPlaybackStream));
-
-    // Start background thread
-    if (micCaptureStream && micPlaybackStream) {
-        threadRunning = true;
-        audioThread = std::thread(&AudioSystem::microphoneLoop, this);
-        std::cout << "Microphone background thread started!\n";
+        std::cout << "No Virtual Cable found.\n";
     }
 
     return true;
 }
 
-void AudioSystem::microphoneLoop() {
-    while (threadRunning) {
-        int availableBytes = SDL_GetAudioStreamAvailable(micCaptureStream);
-
-        if (availableBytes > 0) {
-            std::vector<Uint8> voiceBuffer(availableBytes);
-            SDL_GetAudioStreamData(micCaptureStream, voiceBuffer.data(), availableBytes);
-            SDL_PutAudioStreamData(micPlaybackStream, voiceBuffer.data(), availableBytes);
-        }
-
-        SDL_Delay(5);
+void AudioSystem::duplexCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+    if (pOutput != nullptr && pInput != nullptr) {
+        //copy mic input to vb-cable
+        ma_uint32 bytesToCopy = frameCount * pDevice->playback.channels * ma_get_bytes_per_sample(pDevice->playback.format);
+        memcpy(pOutput, pInput, bytesToCopy);
     }
 }
 
-void AudioSystem::playSound() {
-    std::cout << "Playing Bang!\n";
+void AudioSystem::playSound(const std::string& filepath) {
+    std::cout << "Playing Sound: " << filepath << "\n";
 
-    // Push the sound to headphones
-    if (sfxSpeakerStream) {
-        SDL_PutAudioStreamData(sfxSpeakerStream, wavBuffer, wavLength);
+    // Play to headphones
+    if (isSpeakerInit) {
+        ma_engine_play_sound(&speakerEngine, filepath.c_str(), NULL);
     }
 
-    // Push the sound to VB-Cable
-    if (sfxCableStream) {
-        SDL_PutAudioStreamData(sfxCableStream, wavBuffer, wavLength);
+    // Play to VB-cable
+    if (isCableInit) {
+        ma_engine_play_sound(&cableEngine, filepath.c_str(), NULL);
     }
 }
 
 void AudioSystem::cleanUp() {
-    threadRunning = false;
-    if (audioThread.joinable()) {
-        audioThread.join();
+    if (isMicRouterInit) {
+        ma_device_uninit(&micRouterDevice);
     }
-
-    // Destroy all 4 Channels (W)
-    if (sfxSpeakerStream) SDL_DestroyAudioStream(sfxSpeakerStream);
-    if (sfxCableStream) SDL_DestroyAudioStream(sfxCableStream);
-    if (micCaptureStream) SDL_DestroyAudioStream(micCaptureStream);
-    if (micPlaybackStream) SDL_DestroyAudioStream(micPlaybackStream);
-
-    if (wavBuffer) SDL_free(wavBuffer);
-    SDL_QuitSubSystem(SDL_INIT_AUDIO);
-
+    if (isSpeakerInit) {
+        ma_engine_uninit(&speakerEngine);
+    }
+    if (isCableInit) {
+        ma_engine_uninit(&cableEngine);
+    }
+    if (isContextInit) {
+        ma_context_uninit(&context);
+    }
     std::cout << "AudioSystem cleaned up.\n";
 }
