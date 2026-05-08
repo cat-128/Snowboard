@@ -5,8 +5,13 @@
 int main() {
 
 	Renderer renderer;
+	AudioSystem audio;
 
 	renderer.init(400, 400, "snowboard");
+
+	if (!audio.init()) {
+		return -1;
+	}
 
 	bool isRunning = true;
 	SDL_Event event;
@@ -15,6 +20,12 @@ int main() {
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_EVENT_QUIT) {
 				isRunning = false;
+			}
+
+			if (event.type == SDL_EVENT_KEY_DOWN) {
+				if (event.key.key == SDLK_SPACE) {
+					audio.playSound();
+				}
 			}
 		}
 
