@@ -12,7 +12,8 @@ Features -
 
 To compile you need the following libraries ->
 - SDL 3
-- SDL3 TTF
-- SDL3 mixer
-- SDL3 image
+- Miniaudio
+- ImGui
 > sorry about this, will fix in the future..
+
+**Please check the cmakelists.txt**
