@@ -10,7 +10,7 @@ void Renderer::init(int width, int height, const char* title) {
         title, 
         width, 
         height, 
-        SDL_WINDOW_ALWAYS_ON_TOP, 
+        SDL_WINDOW_ALWAYS_ON_TOP,
         &window, 
         &SDL_Renderer)) {
         std::cout << "SDL window and renderer could not be created" << std::endl;

@@ -97,18 +97,78 @@ void AudioSystem::duplexCallback(ma_device* pDevice, void* pOutput, const void* 
 void AudioSystem::playSound(const std::string& filepath) {
     std::cout << "Playing Sound: " << filepath << "\n";
 
-    // Play to headphones
-    if (isSpeakerInit) {
-        ma_engine_play_sound(&speakerEngine, filepath.c_str(), NULL);
+    // 1. Clean up speaker sounds that have naturally finished playing
+    for (auto it = activeSpeakerSounds.begin(); it != activeSpeakerSounds.end(); ) {
+        if (ma_sound_at_end(*it)) { // <--- THE MAGIC FIX
+            ma_sound_uninit(*it);
+            delete* it;
+            it = activeSpeakerSounds.erase(it);
+        }
+        else {
+            ++it;
+        }
     }
 
-    // Play to VB-cable
+    // 2. Clean up cable sounds that have naturally finished playing
+    for (auto it = activeCableSounds.begin(); it != activeCableSounds.end(); ) {
+        if (ma_sound_at_end(*it)) { // <--- THE MAGIC FIX
+            ma_sound_uninit(*it);
+            delete* it;
+            it = activeCableSounds.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    // 3. Play to headphones 
+    if (isSpeakerInit) {
+        ma_sound* snd = new ma_sound;
+        if (ma_sound_init_from_file(&speakerEngine, filepath.c_str(), MA_SOUND_FLAG_DECODE, NULL, NULL, snd) == MA_SUCCESS) {
+            ma_sound_start(snd);
+            activeSpeakerSounds.push_back(snd);
+        }
+        else {
+            delete snd;
+        }
+    }
+
+    // 4. Play to VB-cable 
     if (isCableInit) {
-        ma_engine_play_sound(&cableEngine, filepath.c_str(), NULL);
+        ma_sound* snd = new ma_sound;
+        if (ma_sound_init_from_file(&cableEngine, filepath.c_str(), MA_SOUND_FLAG_DECODE, NULL, NULL, snd) == MA_SUCCESS) {
+            ma_sound_start(snd);
+            activeCableSounds.push_back(snd);
+        }
+        else {
+            delete snd;
+        }
     }
 }
 
+void AudioSystem::stopSound() {
+    std::cout << "Stopping all sounds...\n";
+
+    // Stop and destroy all active speaker sounds
+    for (ma_sound* snd : activeSpeakerSounds) {
+        ma_sound_stop(snd);
+        ma_sound_uninit(snd);
+        delete snd;
+    }
+    activeSpeakerSounds.clear(); // Empty the list
+
+    // Stop and destroy all active cable sounds
+    for (ma_sound* snd : activeCableSounds) {
+        ma_sound_stop(snd);
+        ma_sound_uninit(snd);
+        delete snd;
+    }
+    activeCableSounds.clear(); // Empty the list
+}
+
 void AudioSystem::cleanUp() {
+    stopSound();
+
     if (isMicRouterInit) {
         ma_device_uninit(&micRouterDevice);
     }

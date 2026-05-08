@@ -9,7 +9,7 @@ int main() {
 	AudioSystem audio;
 	Interface wholeUI;
 
-	renderer.init(600, 370, "snowboard");
+	renderer.init(520, 370, "snowboard");
 
 	SDL_Window* rawWindow = renderer.getWindow();
 	SDL_Renderer* rawRenderer = renderer.getRenderer();
@@ -32,13 +32,13 @@ int main() {
 				isRunning = false;
 			}
 
-			if (event.type == SDL_EVENT_KEY_DOWN) {
+			if (event.type == SDL_EVENT_KEY_DOWN && event.key.repeat == false) {
 				if (event.key.key == SDLK_SPACE) {
 					audio.playSound("resources/audio/bang.wav");
 				}
 
 				if (event.key.key == SDLK_1) {
-					audio.playSound("resources/audio/cave.wav");
+					audio.playSound("resources/audio/sounds/cave.wav");
 				}
 				if (event.key.key == SDLK_2) {
 					audio.playSound("resources/audio/sounds/discord-notification.wav");
@@ -58,12 +58,17 @@ int main() {
 				if (event.key.key == SDLK_7) {
 					audio.playSound("resources/audio/sounds/fortnite.wav");
 				}
+				if (event.key.key == SDLK_0) {
+					audio.stopSound();
+				}
 			}
 
 		}
 
 		wholeUI.StartFrame();
 		wholeUI.drawFrame("Snowboard");
+		wholeUI.Layout(audio);
+		wholeUI.EndFrame();
 
 		renderer.clear();
 		wholeUI.ImGuiRender(rawRenderer);

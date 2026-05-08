@@ -37,11 +37,9 @@ void Interface::drawFrame(const char* title) {
 
 	ImGui::Begin(title, nullptr, flags);
 	ImGui::Text("snowboard");
+}
 
-	if (ImGui::Button("Play audio")) {
-
-	}
-
+void Interface::EndFrame() {
 	ImGui::End();
 }
 
@@ -142,4 +140,45 @@ void Interface::SetStyles() {
 	style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.7f);
 	style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.2f);
 	style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.35f);
+}
+
+// Layout son this finna be peak!
+void Interface::Layout(AudioSystem& audio){
+
+	ImGui::BeginChild("MainArea", ImVec2(0, 0), false);
+	ImVec2 btnSize(120, 80);
+
+	if (ImGui::Button("Bang", btnSize)) {
+		audio.playSound("resources/audio/bang.wav");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Cave\nkeybind: 1", btnSize)) {
+		audio.playSound("resources/audio/sounds/cave.wav");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("discord\nkeybind: 2", btnSize)) {
+		audio.playSound("resources/audio/sounds/discord-notification.wav");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("500 cigars\nKeybind: 4", btnSize)) {
+		audio.playSound("resources/audio/sounds/500.wav");
+	}
+
+	if (ImGui::Button("Drink\nKeybind: 3", btnSize)) {
+		audio.playSound("resources/audio/sounds/drinkingNoise.wav");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("w-Speed\nKeybind: 5", btnSize)) {
+		audio.playSound("resources/audio/sounds/w-speed.wav");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("bruh\nKeybind: 6", btnSize)) {
+		audio.playSound("resources/audio/sounds/ohMyGod.wav");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("stop\nKeybind: 0", btnSize)) {
+		audio.stopSound();
+	}
+
+	ImGui::EndChild();
 }
