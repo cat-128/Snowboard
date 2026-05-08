@@ -9,3 +9,10 @@ Features -
 - can be used in most* applications
 
 > note: the code may not be that clean.
+
+To compile you need the following libraries ->
+- SDL 3
+- SDL3 TTF
+- SDL3 mixer
+- SDL3 image
+> sorry about this, will fix in the future..
