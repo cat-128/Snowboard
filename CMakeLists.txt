@@ -10,16 +10,9 @@ project("Snowboard")
 
 list(APPEND CMAKE_PREFIX_PATH
     "${CMAKE_SOURCE_DIR}/libs/SDL3-devel-3.4.6-VC"
-    "${CMAKE_SOURCE_DIR}/libs/SDL3-image-devel-vc"
-    "${CMAKE_SOURCE_DIR}/libs/SDL3_mixer-devel-3.2.0-VC"
-    "${CMAKE_SOURCE_DIR}/libs/SDL3_ttf-devel-3.2.0-VC" 
 )
 
 find_package(SDL3       REQUIRED CONFIG)
-find_package(SDL3_image REQUIRED CONFIG)
-find_package(SDL3_mixer REQUIRED CONFIG)
-
-find_package(SDL3_ttf   REQUIRED CONFIG) 
 
 add_executable(Snowboard 
     "src/Main.cpp" 
@@ -40,9 +33,6 @@ target_include_directories(Snowboard PRIVATE
 
 target_link_libraries(Snowboard PRIVATE
     SDL3::SDL3
-    SDL3_image::SDL3_image
-    SDL3_mixer::SDL3_mixer
-    SDL3_ttf::SDL3_ttf
 )
 
 # dont mind ts
