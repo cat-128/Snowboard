@@ -27,6 +27,8 @@ add_executable(Snowboard
     "src/audioSystem.h" 
     "src/renderer.cpp" 
     "src/renderer.h"
+    "src/audioManager.h"
+    "src/audioManager.cpp"
 )
 
 set_property(TARGET Snowboard PROPERTY CXX_STANDARD 20)
