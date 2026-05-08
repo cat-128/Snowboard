@@ -12,7 +12,20 @@ list(APPEND CMAKE_PREFIX_PATH
     "${CMAKE_SOURCE_DIR}/libs/SDL3-devel-3.4.6-VC"
 )
 
+set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
+
 find_package(SDL3       REQUIRED CONFIG)
+
+set(IMGUI_SOURCES
+    "${IMGUI_DIR}/imgui.cpp"
+    "${IMGUI_DIR}/imgui_demo.cpp"
+    "${IMGUI_DIR}/imgui_draw.cpp"
+    "${IMGUI_DIR}/imgui_tables.cpp"
+    "${IMGUI_DIR}/imgui_widgets.cpp"
+
+    "${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp"
+    "${IMGUI_DIR}/backends/imgui_impl_sdlrenderer3.cpp"
+)
 
 add_executable(Snowboard 
     "src/Main.cpp" 
@@ -22,13 +35,19 @@ add_executable(Snowboard
     "src/renderer.h"
     "src/audioManager.h"
     "src/audioManager.cpp"
+    "src/interface.h"
+    "src/interface.cpp"
+
     "libs/miniaudio.h"
+    ${IMGUI_SOURCES}
 )
 
 set_property(TARGET Snowboard PROPERTY CXX_STANDARD 20)
 
 target_include_directories(Snowboard PRIVATE 
     "${CMAKE_SOURCE_DIR}/libs/"
+    "${IMGUI_DIR}"
+    "${IMGUI_DIR}/backends" 
 )
 
 target_link_libraries(Snowboard PRIVATE

@@ -1,23 +1,33 @@
 ﻿#include <iostream>
 #include "renderer.h"
 #include "audioSystem.h"
+#include "interface.h"
 
 int main() {
 
 	Renderer renderer;
 	AudioSystem audio;
+	Interface wholeUI;
 
-	renderer.init(400, 400, "snowboard");
+	renderer.init(600, 370, "snowboard");
+
+	SDL_Window* rawWindow = renderer.getWindow();
+	SDL_Renderer* rawRenderer = renderer.getRenderer();
 
 	if (!audio.init()) {
 		return -1;
 	}
+
+	wholeUI.init(rawWindow, rawRenderer);
 
 	bool isRunning = true;
 	SDL_Event event;
 	while (isRunning) {
 			
 		while (SDL_PollEvent(&event)) {
+
+			wholeUI.processEvent(&event);
+
 			if (event.type == SDL_EVENT_QUIT) {
 				isRunning = false;
 			}
@@ -49,12 +59,18 @@ int main() {
 					audio.playSound("resources/audio/sounds/fortnite.wav");
 				}
 			}
+
 		}
 
+		wholeUI.StartFrame();
+		wholeUI.drawFrame("Snowboard");
+
 		renderer.clear();
+		wholeUI.ImGuiRender(rawRenderer);
 		renderer.present();
 	}
 
+	wholeUI.cleanUp();
 	renderer.cleanUp();
 
 	return 0;
